@@ -1,107 +1,122 @@
-import { PrismaClient } from '@prisma/client'
-import ReactMarkdown from 'react-markdown'
-import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import ReactMarkdown from "react-markdown";
+import ShareButtons from "@/components/ShareButtons";
+import { excerpt, FALLBACK_IMAGE, formatDate, getPost, isExternal, readingMinutes } from "@/lib/posts";
+import { SITE } from "@/lib/site";
 
-const prisma = new PrismaClient()
+export const revalidate = 300;
 
-interface PageProps {
-  params: Promise<{ id: string }>;
+type PageProps = { params: Promise<{ id: string }> };
+
+async function load(params: PageProps["params"]) {
+  const { id } = await params;
+  const n = Number(id);
+  if (!Number.isInteger(n) || n <= 0) return null;
+  return getPost(n);
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const post = await load(params);
+  if (!post) return { title: "Nota no encontrada" };
+  const description = excerpt(post, 160);
+  return {
+    title: post.title,
+    description,
+    openGraph: {
+      type: "article",
+      title: post.title,
+      description,
+      publishedTime: post.createdAt.toISOString(),
+      authors: [post.author || "José A. Scheifler"],
+      ...(post.imageUrl ? { images: [post.imageUrl] } : {}),
+    },
+  };
 }
 
 export default async function NotaPage({ params }: PageProps) {
-  const resolvedParams = await params;
-  const { id } = resolvedParams;
+  const post = await load(params);
+  if (!post) notFound();
 
-  const idNumero = parseInt(id);
-  if (isNaN(idNumero)) return notFound();
-
-  const post = await prisma.post.findUnique({
-    where: { id: idNumero },
-  });
-
-  if (!post) return notFound();
+  const external = isExternal(post);
 
   return (
-    <main className="min-h-screen bg-white">
-      
-      {/* 1. PORTADA DINÁMICA */}
-      <div className="relative w-full min-h-[60vh] flex items-end bg-gray-900">
-         <div className="absolute inset-0">
-            <img 
-                src={post.imageUrl || "/fondo.png"} 
-                alt={post.title} 
-                className="w-full h-full object-cover opacity-40" 
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent"></div>
-         </div>
-         
-         <div className="relative z-10 w-full max-w-5xl mx-auto px-6 pb-16 pt-32">
-            <span className="bg-brand-gold text-brand-blue px-4 py-1 rounded-sm text-xs font-bold uppercase tracking-widest w-fit mb-6 shadow-sm inline-block">
+    <main className="bg-paper">
+      {/* Portada */}
+      <header className="grain relative isolate flex min-h-[78svh] items-end overflow-hidden bg-navy-950 text-white">
+        {/* eslint-disable-next-line @next/next/no-img-element -- imágenes de medios externos */}
+        <img src={post.imageUrl || FALLBACK_IMAGE} alt="" className="absolute inset-0 -z-10 h-full w-full animate-slow-zoom object-cover opacity-45" />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-navy-950 via-navy-950/70 to-navy-950/30" />
+
+        <div className="container-site pb-16 pt-40 sm:pb-20">
+          <div className="max-w-4xl">
+            <div className="flex animate-fade-up flex-wrap items-center gap-3">
+              <Link href="/prensa" className="text-[0.7rem] font-semibold uppercase tracking-eyebrow text-white/60 hover:text-white">
+                Prensa
+              </Link>
+              <span className="text-white/30">/</span>
+              <span className="rounded-full bg-gold px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-navy-950">
                 {post.category || "Actualidad"}
-            </span>
-            
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-white leading-tight shadow-sm drop-shadow-md pb-2">
-                {post.title}
-            </h1>
-            
-            <div className="text-gray-300 mt-6 flex flex-wrap items-center gap-4 text-sm font-sans tracking-wide border-t border-gray-600 pt-6 w-fit">
-                <span className="uppercase font-bold text-white">{post.source || "Estudio Scheifler"}</span>
-                <span className="hidden sm:inline">•</span>
-                <span>{post.createdAt.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+              </span>
             </div>
-         </div>
-      </div>
 
-      <article className="max-w-3xl mx-auto px-6 py-16 font-serif leading-relaxed text-gray-700">
-        
-        {/* FUENTE EXTERNA */}
-        {post.externalUrl && (
-            <div className="bg-gray-50 border-l-4 border-brand-blue p-6 mb-10 shadow-sm rounded-r-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 font-sans">
-                <div>
-                    <p className="text-xs text-gray-400 uppercase font-bold mb-1">Fuente Externa</p>
-                    <p className="text-sm text-gray-700 italic">
-                        Publicado originalmente en <strong>{post.source}</strong>.
-                    </p>
-                </div>
-                <a href={post.externalUrl} target="_blank" rel="noopener noreferrer" className="whitespace-nowrap px-5 py-2 bg-white border border-gray-200 text-brand-blue text-xs font-bold uppercase tracking-widest hover:bg-brand-blue hover:text-white transition-colors rounded-sm text-center">
-                    Ver Original ↗
-                </a>
+            <h1 className="mt-8 animate-fade-up font-serif text-display-lg font-light [animation-delay:120ms]">{post.title}</h1>
+
+            <div className="mt-10 flex animate-fade-up flex-wrap items-center gap-x-6 gap-y-2 border-t border-white/15 pt-6 text-sm text-white/65 [animation-delay:240ms]">
+              <span className="font-semibold uppercase tracking-[0.12em] text-white">{post.source || "Estudio Scheifler"}</span>
+              <time dateTime={post.createdAt.toISOString()}>{formatDate(post.createdAt)}</time>
+              <span>{readingMinutes(post.content)} min de lectura</span>
             </div>
-        )}
+          </div>
+        </div>
+      </header>
 
-        {/* 2. BAJADA / COPETE (Cursiva) */}
-        {post.subtitle && (
-            <div className="text-xl italic mb-8 text-gray-600 font-medium leading-relaxed border-b border-gray-100 pb-6">
-                {post.subtitle}
-            </div>
-        )}
+      <article className="container-site py-16 sm:py-24">
+        <div className="mx-auto max-w-[44rem]">
+          {post.subtitle && (
+            <p className="font-serif text-2xl font-light italic leading-relaxed text-navy-900/80 sm:text-[1.7rem]">
+              {post.subtitle}
+            </p>
+          )}
 
-        {/* 3. AUTOR (Negrita) */}
-        {post.author && (
-            <div className="font-bold mb-8 text-brand-blue text-lg">
-               {post.author}
-            </div>
-        )}
+          <div className="mt-10 flex flex-wrap items-center justify-between gap-6 border-y border-navy-900/10 py-6">
+            {post.author && <p className="font-semibold text-navy-900">{post.author}</p>}
+            {external && (
+              <a
+                href={post.externalUrl!}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-navy-900 hover:text-gold-dark"
+              >
+                Publicado en {post.source || "el medio original"} ↗
+              </a>
+            )}
+          </div>
 
-        {/* 4. CUERPO PRINCIPAL (Con Letra Capital) */}
-        <div className="prose prose-lg prose-blue max-w-none 
-            first-letter:text-6xl first-letter:font-bold first-letter:text-brand-gold first-letter:mr-4 first-letter:float-left first-letter:leading-[0.8] first-letter:mt-2">
+          <div className="dropcap prose prose-lg prose-estudio mt-12 max-w-none font-serif prose-p:leading-[1.8]">
             <ReactMarkdown>{post.content}</ReactMarkdown>
-        </div>
+          </div>
 
-        {/* PIE DE PÁGINA */}
-        <div className="mt-20 pt-10 border-t border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-6 font-sans">
-            <Link href="/prensa" className="group text-brand-blue font-bold text-sm uppercase tracking-widest hover:text-brand-gold transition-colors flex items-center gap-3">
-                <span className="group-hover:-translate-x-1 transition-transform">←</span> Volver al Repositorio
+          <footer className="mt-20 space-y-10 border-t border-navy-900/15 pt-10">
+            <ShareButtons title={post.title} />
+
+            <div className="flex flex-col gap-6 rounded-3xl bg-navy-900 p-8 text-white sm:flex-row sm:items-center sm:justify-between sm:p-10">
+              <div>
+                <p className="font-serif text-2xl">¿Le afecta este escenario?</p>
+                <p className="mt-2 text-sm text-white/60">Analicemos juntos el impacto en su empresa o municipio.</p>
+              </div>
+              <a href={SITE.calendar} target="_blank" rel="noopener noreferrer" className="btn-gold shrink-0 !py-3.5">
+                Agendar diagnóstico
+              </a>
+            </div>
+
+            <Link href="/prensa" className="group inline-flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.16em] text-navy-900">
+              <span className="transition-transform group-hover:-translate-x-1">←</span> Volver a la sala de prensa
             </Link>
-            
-            <a href={`https://wa.me/?text=Mirá esta nota: ${post.title}`} target="_blank" className="text-gray-500 font-bold text-sm hover:text-green-600 flex items-center gap-2 transition-colors">
-               Compartir <span className="text-xl">📱</span>
-            </a>
+          </footer>
         </div>
-
       </article>
     </main>
-  )
+  );
 }

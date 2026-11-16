@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Estudio Scheifler & Asoc. — sitio web
 
-## Getting Started
+Next.js 16 (App Router) + Tailwind CSS 3 + Prisma (PostgreSQL). Desplegado en Netlify.
 
-First, run the development server:
+## Variables de entorno
+
+| Variable            | Para qué                                                                  |
+| ------------------- | ------------------------------------------------------------------------- |
+| `DATABASE_URL`      | Conexión a PostgreSQL (notas de prensa).                                  |
+| `ADMIN_PASSWORD`    | Clave del panel `/admin`. Usar una larga (16+ caracteres).                |
+| `ANTHROPIC_API_KEY` | Clave del chat IAn.                                                       |
+| `ANTHROPIC_MODEL`   | Opcional. Modelo del chat (por defecto `claude-haiku-5-5`).               |
+
+## Desarrollo
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Base de datos
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Las migraciones están en `prisma/migrations` (PostgreSQL).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Base nueva:** `npx prisma migrate deploy`
+- **Base que ya existe en producción** (creada antes con `db push`): marcar la migración inicial como aplicada, una sola vez:
 
-## Learn More
+```bash
+npx prisma migrate resolve --applied 0_init
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Estructura
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `app/page.tsx` — inicio
+- `app/prensa` — sala de prensa y notas (`/prensa/[id]`)
+- `app/admin` — editor de notas (protegido con `ADMIN_PASSWORD`, con límite de intentos)
+- `app/api/chat` — chat IAn (con límite de mensajes por IP)
+- `lib/site.ts` — datos de contacto (WhatsApp, email, agenda) en un solo lugar
+- `tailwind.config.mjs` — paleta de marca, tipografías y animaciones

@@ -1,418 +1,528 @@
 import Image from "next/image";
 import Link from "next/link";
-import NewsSection from "@/components/NewsSection"; // 👈 IMPORTAMOS TU NUEVA SECCIÓN
+import NewsSection from "@/components/NewsSection";
+import ContactForm from "@/components/ContactForm";
+import Reveal from "@/components/Reveal";
+import { SITE, whatsappLink } from "@/lib/site";
+
+// Las notas se refrescan solas cada 5 minutos (y al instante al publicar desde /admin).
+export const revalidate = 300;
+
+const MARQUEE = [
+  "Comercio exterior",
+  "Ingeniería de costos",
+  "Gerenciamiento externo",
+  "Inteligencia comercial",
+  "Landed cost",
+  "Ingeniería fiscal",
+  "Desarrollo productivo",
+  "Sourcing internacional",
+];
+
+const SERVICES = [
+  {
+    n: "01",
+    title: "Exportación",
+    lead: "Su producto, en el mercado correcto y al precio correcto.",
+    items: ["Inteligencia comercial", "Ingeniería de costos FOB", "Búsqueda de compradores"],
+    icon: "M12 21a9 9 0 100-18 9 9 0 000 18zm0 0c2.5-2.5 3.75-5.5 3.75-9S14.5 5.5 12 3m0 18c-2.5-2.5-3.75-5.5-3.75-9S9.5 5.5 12 3M3.5 9h17M3.5 15h17",
+  },
+  {
+    n: "02",
+    title: "Importación",
+    lead: "Sepa cuánto le cuesta realmente cada unidad puesta en su depósito.",
+    items: ["Cálculo de landed cost", "Sourcing y proveedores", "Pagos al exterior"],
+    icon: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
+  },
+  {
+    n: "03",
+    title: "Consultoría",
+    lead: "Un socio estratégico en la mesa de decisiones, sin costo fijo de gerencia.",
+    items: ["Auditoría de procesos", "Outsourcing gerencial", "Diagnóstico de rentabilidad"],
+    icon: "M3 3v18h18M7 15l4-4 3 3 6-6m0 0h-4m4 0v4",
+  },
+];
+
+const GOV = [
+  {
+    title: "Ingeniería fiscal",
+    text: "Transformación de tasas arcaicas en recaudación genuina, con un esquema donde al privado le convenga producir.",
+  },
+  {
+    title: "Gerenciamiento ejecutivo",
+    text: "Mentalidad de gestión privada aplicada a la cosa pública: objetivos, indicadores y resultados medibles.",
+  },
+  {
+    title: "Desarrollo productivo",
+    text: "Entendemos qué necesitan las empresas locales para crecer y generar empleo, y lo convertimos en política pública.",
+  },
+];
+
+const STEPS = [
+  {
+    n: "01",
+    title: "Diagnóstico",
+    text: "Una videollamada de 30 minutos para entender su situación, sus números y lo que está en juego.",
+  },
+  {
+    n: "02",
+    title: "Estrategia",
+    text: "Costos, precios, mercados y riesgos sobre la mesa. Un plan claro, con prioridades y cifras concretas.",
+  },
+  {
+    n: "03",
+    title: "Acompañamiento",
+    text: "Trabajamos junto a su equipo, su contador y su despachante hasta que los resultados se vean.",
+  },
+];
+
+const FAQ = [
+  {
+    q: "¿Ustedes reemplazan a mi estudio contable actual?",
+    a: (
+      <>
+        <strong>No, lo potenciamos.</strong> No somos un estudio contable tradicional que liquida impuestos mensuales; somos
+        una <strong>consultora de negocios y comercio exterior</strong>. Mientras su contador se asegura de cumplir con el
+        fisco (mirando el pasado), nosotros analizamos sus costos y su estructura comercial para proyectar el crecimiento
+        (mirando el futuro). Trabajamos en equipo con su administración actual.
+      </>
+    ),
+  },
+  {
+    q: "Ya tengo despachante de aduana, ¿para qué necesito un licenciado?",
+    a: (
+      <>
+        Es una distinción clave: el despachante es nuestro socio operativo (hace el trámite ante Aduana), pero el{" "}
+        <strong>Licenciado en Comercio Internacional define la estrategia</strong>. Analizamos si el precio es correcto, la
+        logística más eficiente, cómo recuperar reintegros y la estructuración financiera. No solo hacemos que la carga
+        salga: hacemos que la operación sea <strong>rentable</strong>.
+      </>
+    ),
+  },
+  {
+    q: "¿Trabajan únicamente con empresas que ya exportan?",
+    a: (
+      <>
+        No. Trabajamos con cualquier PyME o municipio que quiera ordenar sus números para crecer. La mentalidad de
+        comercio internacional implica <strong>eficiencia y competitividad</strong>, cualidades que sirven tanto para
+        vender en China como en el mercado local. Si su estructura es eficiente puertas adentro, la exportación es una
+        consecuencia natural.
+      </>
+    ),
+  },
+  {
+    q: "¿Qué aporta un perfil de comercio exterior a un municipio?",
+    a: (
+      <>
+        Aporta una visión de <strong>desarrollo productivo</strong>. Nuestra ingeniería fiscal no busca solo recaudar
+        tasas, sino crear un ecosistema donde al privado le convenga producir. Ayudamos al municipio a gestionar sus
+        recursos con la misma eficiencia que una empresa exportadora.
+      </>
+    ),
+  },
+  {
+    q: "Mi empresa es familiar, ¿es viable contratar consultoría externa?",
+    a: (
+      <>
+        Precisamente las estructuras familiares son las que más se benefician de una gerencia externa. Al no tener los
+        costos fijos de contratar un gerente de comex o de finanzas a tiempo completo, usted accede a un servicio
+        profesional por objetivos. <strong>Profesionalizamos la toma de decisiones</strong> sin cargar su estructura de
+        costos fijos.
+      </>
+    ),
+  },
+];
+
+function Arrow({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M5 12h14m-6-6l6 6-6 6" />
+    </svg>
+  );
+}
 
 export default function Home() {
   return (
-    <main className="min-h-screen">
-      
-      {/* --- HERO SECTION (INTACTA) --- */}
-      <header id="inicio" className="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden bg-brand-blue">
-        <div className="absolute inset-0 z-0">
-            <Image 
-              src="/fondo.png" 
-              alt="Fondo Escritorio" 
-              fill
-              className="object-cover opacity-40"
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-brand-blue/90 via-brand-blue/70 to-brand-blue/95"></div>
+    <main>
+      {/* ───────────────────────── HERO ───────────────────────── */}
+      <section id="inicio" className="grain relative isolate flex min-h-[100svh] flex-col overflow-hidden bg-navy-950 text-white">
+        <div className="absolute inset-0 -z-10">
+          <Image
+            src="/hero.jpg"
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className="animate-slow-zoom object-cover opacity-35"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-navy-950 via-navy-950/85 to-navy-900/40" />
+          <div className="absolute inset-0 bg-gradient-to-t from-navy-950 via-transparent to-navy-950/60" />
+          <div className="meridians absolute inset-0" />
         </div>
 
-        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white tracking-tight mb-6 leading-tight">
-                POTENCIAMOS CAPITALES.<br />
-                <span className="text-brand-gold">PÚBLICOS Y PRIVADOS.</span>
-            </h1>
-            
-            <p className="mt-4 text-lg md:text-2xl text-gray-300 max-w-3xl mx-auto font-light tracking-wide mb-10">
-                Gerenciamiento Externo, Ingeniería de Costos y Desarrollo de Negocios Internacionales.
+        <div className="container-site flex flex-1 flex-col justify-center pb-16 pt-36 sm:pt-40">
+          <p className="eyebrow animate-fade-up text-gold [animation-delay:100ms]">
+            Consultoría estratégica · Entre Ríos → el mundo
+          </p>
+
+          <h1 className="mt-8 max-w-5xl animate-fade-up font-serif text-display-xl font-light [animation-delay:200ms]">
+            Potenciamos capitales
+            <br />
+            <span className="italic text-gold">públicos y privados.</span>
+          </h1>
+
+          <p className="mt-8 max-w-xl animate-fade-up text-lg leading-relaxed text-white/70 [animation-delay:350ms] sm:text-xl">
+            Gerenciamiento externo, ingeniería de costos y desarrollo de negocios internacionales para empresas y
+            gobiernos que quieren crecer con números claros.
+          </p>
+
+          <div className="mt-12 flex animate-fade-up flex-col gap-4 [animation-delay:500ms] sm:flex-row">
+            <a href={SITE.calendar} target="_blank" rel="noopener noreferrer" className="btn-gold">
+              Agendar diagnóstico
+              <Arrow />
+            </a>
+            <Link href="#empresas" className="btn-ghost-light">
+              Conocer servicios
+            </Link>
+          </div>
+        </div>
+
+        {/* Dos puertas de entrada */}
+        <div className="container-site relative grid animate-fade-up gap-px pb-10 [animation-delay:700ms] sm:grid-cols-2 sm:pb-14">
+          {[
+            { href: "#empresas", k: "Sector privado", t: "PyMEs, exportadores e importadores" },
+            { href: "#gobierno", k: "Sector público", t: "Municipios y organismos de gobierno" },
+          ].map((d) => (
+            <Link
+              key={d.href}
+              href={d.href}
+              className="group flex items-center justify-between gap-6 border-t border-white/15 py-6 transition-colors hover:border-gold sm:pr-10"
+            >
+              <span>
+                <span className="block text-[0.68rem] font-semibold uppercase tracking-eyebrow text-gold">{d.k}</span>
+                <span className="mt-2 block font-serif text-xl text-white/90 sm:text-2xl">{d.t}</span>
+              </span>
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/20 transition-all duration-300 group-hover:border-gold group-hover:bg-gold group-hover:text-navy-950">
+                <Arrow />
+              </span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* ───────────────────────── MARQUEE ───────────────────────── */}
+      <div className="relative overflow-hidden border-y border-navy-900/10 bg-paper py-5" aria-hidden>
+        <div className="flex w-max animate-marquee">
+          {[...MARQUEE, ...MARQUEE].map((w, i) => (
+            <span key={i} className="flex items-center whitespace-nowrap font-serif text-xl italic text-navy-900/70 sm:text-2xl">
+              <span className="px-8">{w}</span>
+              <span className="text-gold">✦</span>
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* ───────────────────────── EMPRESAS ───────────────────────── */}
+      <section id="empresas" className="bg-paper py-24 sm:py-36">
+        <div className="container-site">
+          <div className="grid gap-10 lg:grid-cols-12">
+            <Reveal className="lg:col-span-4">
+              <span className="eyebrow text-gold-dark">Sector privado</span>
+            </Reveal>
+            <Reveal className="lg:col-span-8" delay={100}>
+              <h2 className="font-serif text-display-lg font-light text-navy-900">
+                No vendemos trámites.
+                <br />
+                <span className="italic text-gold-dark">Gestionamos rentabilidad.</span>
+              </h2>
+              <p className="mt-8 max-w-xl text-lg leading-relaxed text-navy-900/65">
+                Ingeniería de costos y seguridad normativa para su empresa. Cada decisión comercial, respaldada por
+                números que se entienden.
+              </p>
+            </Reveal>
+          </div>
+
+          <div className="mt-20 grid gap-5 md:grid-cols-3">
+            {SERVICES.map((s, i) => (
+              <Reveal key={s.n} delay={i * 120}>
+                <article className="group relative flex h-full flex-col overflow-hidden rounded-3xl border border-navy-900/[0.08] bg-white p-8 transition-all duration-500 hover:-translate-y-1 hover:border-navy-900/0 hover:shadow-lift sm:p-10">
+                  <div className="absolute inset-x-0 top-0 h-1 origin-left scale-x-0 bg-gold transition-transform duration-700 group-hover:scale-x-100" />
+                  <div className="flex items-start justify-between">
+                    <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-navy-900 text-gold transition-colors duration-500 group-hover:bg-gold group-hover:text-navy-950">
+                      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={s.icon} />
+                      </svg>
+                    </span>
+                    <span className="font-serif text-5xl font-light text-navy-900/10">{s.n}</span>
+                  </div>
+                  <h3 className="mt-10 font-serif text-3xl text-navy-900">{s.title}</h3>
+                  <p className="mt-3 leading-relaxed text-navy-900/60">{s.lead}</p>
+                  <ul className="mt-8 space-y-3 border-t border-navy-900/[0.08] pt-6 text-[0.95rem] text-navy-900/80">
+                    {s.items.map((it) => (
+                      <li key={it} className="flex items-center gap-3">
+                        <span className="h-1.5 w-1.5 rounded-full bg-gold" />
+                        {it}
+                      </li>
+                    ))}
+                  </ul>
+                </article>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ───────────────────────── GOBIERNO ───────────────────────── */}
+      <section id="gobierno" className="grain relative overflow-hidden bg-navy-900 py-24 text-white sm:py-36">
+        <div className="meridians pointer-events-none absolute inset-0" />
+        <div className="pointer-events-none absolute -right-40 -top-40 h-[36rem] w-[36rem] rounded-full bg-gold/10 blur-3xl" />
+
+        <div className="container-site relative grid gap-16 lg:grid-cols-12">
+          <Reveal className="lg:col-span-5">
+            <span className="eyebrow text-gold">Sector público</span>
+            <h2 className="mt-8 font-serif text-display-lg font-light">
+              De la administración
+              <br />
+              <span className="italic text-gold">a la producción.</span>
+            </h2>
+            <p className="mt-8 max-w-md text-lg leading-relaxed text-white/65">
+              Transformamos municipios dependientes en motores de desarrollo económico real. Gestión política con
+              mentalidad de eficiencia privada.
             </p>
+            <Link href="#contacto" className="btn-gold mt-12">
+              Solicitar diagnóstico
+              <Arrow />
+            </Link>
+          </Reveal>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center w-full">
-                <Link href="#gobierno" className="w-full sm:w-auto px-8 py-4 bg-transparent border-2 border-white text-white font-semibold rounded-sm hover:bg-white hover:text-brand-blue transition-all duration-300 text-center uppercase tracking-wider text-sm">
-                    Sector Público
-                </Link>
-                <Link href="#empresas" className="w-full sm:w-auto px-8 py-4 bg-brand-gold border-2 border-brand-gold text-brand-blue font-bold rounded-sm hover:bg-yellow-600 hover:border-yellow-600 hover:text-white transition-all duration-300 text-center uppercase tracking-wider text-sm shadow-lg">
-                    Sector Privado
-                </Link>
-            </div>
-        </div>
-      </header>
-
-      {/* --- EMPRESAS SECTION (INTACTA) --- */}
-      <section id="empresas" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center max-w-3xl mx-auto mb-16">
-                <h2 className="text-3xl md:text-4xl font-bold text-brand-blue mb-4">
-                    NO VENDEMOS TRÁMITES. <br /><span className="text-brand-gold">GESTIONAMOS RENTABILIDAD.</span>
-                </h2>
-                <p className="text-lg text-gray-600 font-light">
-                    Ingeniería de costos y seguridad normativa para su empresa.
-                </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {/* Tarjeta 1 */}
-                <div className="bg-brand-gray/30 p-8 rounded-sm shadow-lg hover:shadow-xl transition-all duration-300 border-t-4 border-brand-blue group">
-                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm">
-                        <svg className="w-6 h-6 text-brand-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    </div>
-                    <h3 className="text-xl font-bold text-brand-blue mb-4">EXPORTACIÓN</h3>
-                    <ul className="space-y-3 text-gray-700 text-sm">
-                        <li className="flex items-start"><span className="text-brand-gold mr-2">▪</span> Inteligencia Comercial.</li>
-                        <li className="flex items-start"><span className="text-brand-gold mr-2">▪</span> Ingeniería de Costos FOB.</li>
-                    </ul>
+          <div className="lg:col-span-6 lg:col-start-7">
+            {GOV.map((g, i) => (
+              <Reveal key={g.title} delay={i * 120}>
+                <div className="group grid grid-cols-[auto_1fr] gap-6 border-t border-white/15 py-9 transition-colors last:border-b hover:border-gold sm:gap-10">
+                  <span className="pt-1 font-serif text-sm italic text-gold">0{i + 1}</span>
+                  <div>
+                    <h3 className="font-serif text-2xl transition-colors group-hover:text-gold sm:text-3xl">{g.title}</h3>
+                    <p className="mt-3 max-w-md leading-relaxed text-white/60">{g.text}</p>
+                  </div>
                 </div>
-                {/* Tarjeta 2 */}
-                <div className="bg-brand-gray/30 p-8 rounded-sm shadow-lg hover:shadow-xl transition-all duration-300 border-t-4 border-brand-gold group">
-                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm">
-                        <svg className="w-6 h-6 text-brand-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
-                    </div>
-                    <h3 className="text-xl font-bold text-brand-blue mb-4">IMPORTACIÓN</h3>
-                    <ul className="space-y-3 text-gray-700 text-sm">
-                        <li className="flex items-start"><span className="text-brand-gold mr-2">▪</span> Cálculo de Landed Cost.</li>
-                        <li className="flex items-start"><span className="text-brand-gold mr-2">▪</span> Sourcing y Pagos al Exterior.</li>
-                    </ul>
-                </div>
-                 {/* Tarjeta 3 */}
-                 <div className="bg-brand-gray/30 p-8 rounded-sm shadow-lg hover:shadow-xl transition-all duration-300 border-t-4 border-brand-blue group">
-                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm">
-                        <svg className="w-6 h-6 text-brand-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-                    </div>
-                    <h3 className="text-xl font-bold text-brand-blue mb-4">CONSULTORÍA</h3>
-                    <ul className="space-y-3 text-gray-700 text-sm">
-                        <li className="flex items-start"><span className="text-brand-gold mr-2">▪</span> Auditoría de procesos.</li>
-                        <li className="flex items-start"><span className="text-brand-gold mr-2">▪</span> Outsourcing Gerencial.</li>
-                    </ul>
-                </div>
-            </div>
+              </Reveal>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* --- GOBIERNO SECTION (INTACTA) --- */}
-      <section id="gobierno" className="py-20 bg-brand-blue text-white relative overflow-hidden">
-        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-brand-gold opacity-10 rounded-full blur-3xl"></div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-                <div>
-                    <h2 className="text-3xl md:text-5xl font-bold mb-6 leading-tight">
-                        DE LA ADMINISTRACIÓN <br />
-                        <span className="text-brand-gold">A LA PRODUCCIÓN.</span>
-                    </h2>
-                    <p className="text-gray-300 text-lg mb-8 font-light leading-relaxed">
-                        Transformamos municipios dependientes en motores de desarrollo económico real. Gestión política con mentalidad de eficiencia privada.
-                    </p>
-                    <Link href="#contacto" className="hidden lg:inline-block px-8 py-3 border-2 border-brand-gold text-brand-gold font-bold text-sm tracking-widest uppercase rounded-sm hover:bg-brand-gold hover:text-white transition-all duration-300">
-                        Solicitar Diagnóstico
-                    </Link>
+      {/* ───────────────────────── MÉTODO ───────────────────────── */}
+      <section className="bg-sand/60 py-24 sm:py-32">
+        <div className="container-site">
+          <Reveal className="max-w-2xl">
+            <span className="eyebrow text-gold-dark">Cómo trabajamos</span>
+            <h2 className="mt-6 font-serif text-display-md font-light text-navy-900">
+              Tres pasos. <span className="italic">Cero improvisación.</span>
+            </h2>
+          </Reveal>
+
+          <ol className="mt-16 grid gap-12 md:grid-cols-3 md:gap-8">
+            {STEPS.map((s, i) => (
+              <Reveal as="li" key={s.n} delay={i * 140} className="relative">
+                <div className="flex items-center gap-4">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-full border border-navy-900/20 font-serif text-lg text-navy-900">
+                    {s.n}
+                  </span>
+                  {i < STEPS.length - 1 && <span className="hidden h-px flex-1 bg-gradient-to-r from-navy-900/20 to-transparent md:block" />}
                 </div>
-                <div className="space-y-8">
-                    {/* Item 1 */}
-                    <div className="flex group">
-                        <div className="flex-shrink-0">
-                            <div className="flex items-center justify-center h-12 w-12 rounded-md bg-white/10 text-brand-gold border border-white/20 group-hover:bg-brand-gold group-hover:text-brand-blue transition-colors">
-                                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                            </div>
-                        </div>
-                        <div className="ml-4">
-                            <h3 className="text-xl font-bold text-white">Ingeniería Fiscal</h3>
-                            <p className="mt-2 text-gray-400 text-sm">Transformación de tasas arcaicas en recaudación genuina.</p>
-                        </div>
-                    </div>
-                     {/* Item 2 */}
-                    <div className="flex group">
-                        <div className="flex-shrink-0">
-                            <div className="flex items-center justify-center h-12 w-12 rounded-md bg-white/10 text-brand-gold border border-white/20 group-hover:bg-brand-gold group-hover:text-brand-blue transition-colors">
-                                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                            </div>
-                        </div>
-                        <div className="ml-4">
-                            <h3 className="text-xl font-bold text-white">Gerenciamiento Ejecutivo</h3>
-                            <p className="mt-2 text-gray-400 text-sm">Mentalidad de gestión privada aplicada a la cosa pública.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                <h3 className="mt-8 font-serif text-2xl text-navy-900">{s.title}</h3>
+                <p className="mt-3 max-w-xs leading-relaxed text-navy-900/60">{s.text}</p>
+              </Reveal>
+            ))}
+          </ol>
         </div>
       </section>
 
-      {/* --- SOBRE MI SECTION (INTACTA) --- */}
-      <section id="sobre-mi" className="py-24 bg-brand-gray/20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col md:flex-row items-center gap-12">
-                <div className="w-full md:w-1/3 flex justify-center">
-                    <div className="w-72 h-80 bg-gray-300 rounded-sm shadow-[12px_12px_0px_0px_rgba(1,1,68,1)] flex items-center justify-center text-gray-500 relative overflow-hidden">
-                        <Image src="/perfil.jpg" alt="José Antonio Scheifler" width={300} height={400} className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-brand-blue/10"></div>
-                    </div>
-                </div>
-                <div className="w-full md:w-2/3 text-left">
-                    <h2 className="text-sm font-bold tracking-[0.2em] text-brand-gold uppercase mb-2">El Profesional</h2>
-                    <h3 className="text-3xl md:text-4xl font-serif font-bold text-brand-blue mb-4">JOSÉ ANTONIO SCHEIFLER</h3>
-                    <p className="text-lg text-brand-blue/80 font-medium mb-6">Licenciado en Comercio Internacional & Consultor de Negocios Internacionales</p>
-                    <div className="space-y-4 text-gray-700 leading-relaxed">
-                        <p>
-                            En un mercado globalizado, los números no son solo cifras; son la brújula de su estrategia comercial. 
-                            Con matrícula profesional en el <strong>CPCEER</strong> y una trayectoria enfocada en el desarrollo comercial, 
-                            mi objetivo es simple: transformar la complejidad contable e internacional en rentabilidad clara.
-                        </p>
-                        <p>
-                            No soy solo un consultor externo, soy su aliado estratégico para escalar su negocio con seguridad jurídica y financiera.
-                        </p>
-                    </div>
-                    <div className="mt-8 pt-8 border-t border-gray-300">
-                        <p className="font-serif italic text-2xl text-brand-blue">J.A. Scheifler</p>
-                    </div>
-                </div>
+      {/* ───────────────────────── EL ESTUDIO ───────────────────────── */}
+      <section id="estudio" className="overflow-hidden bg-paper py-24 sm:py-36">
+        <div className="container-site grid items-center gap-16 lg:grid-cols-12 lg:gap-20">
+          <Reveal className="relative mx-auto w-full max-w-md lg:col-span-5 lg:max-w-none">
+            <div className="absolute -bottom-5 -right-5 h-full w-full rounded-[2rem] border border-gold/60" aria-hidden />
+            <div className="relative aspect-[4/5] overflow-hidden rounded-[2rem] bg-sand shadow-lift">
+              <Image
+                src="/jose-scheifler.jpg"
+                alt="Lic. José Antonio Scheifler"
+                fill
+                sizes="(min-width: 1024px) 40vw, 90vw"
+                className="object-cover object-top"
+              />
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-950/85 to-transparent p-7 pt-24 text-white">
+                <p className="font-serif text-2xl">José Antonio Scheifler</p>
+                <p className="mt-1 text-xs uppercase tracking-[0.18em] text-white/70">Lic. en Comercio Internacional · CPCEER</p>
+              </div>
             </div>
+          </Reveal>
+
+          <div className="lg:col-span-7">
+            <Reveal>
+              <span className="eyebrow text-gold-dark">El Estudio</span>
+              <h2 className="mt-6 font-serif text-display-lg font-light text-navy-900">
+                Cuentas claras.
+                <br />
+                <span className="italic text-gold-dark">Negocios seguros.</span>
+              </h2>
+            </Reveal>
+
+            <Reveal delay={100} className="mt-10 space-y-5 text-lg leading-relaxed text-navy-900/70">
+              <p>
+                En un mercado globalizado, los números no son solo cifras: son la brújula de su estrategia comercial.
+                Licenciado en Comercio Internacional y consultor de negocios internacionales, con matrícula profesional
+                en el <strong className="font-semibold text-navy-900">CPCEER</strong>, mi objetivo es simple: transformar
+                la complejidad contable e internacional en rentabilidad clara.
+              </p>
+              <p>
+                Somos una firma radicada en Entre Ríos con una visión que trasciende las fronteras locales. Entendemos que{" "}
+                <strong className="font-semibold text-navy-900">
+                  la contabilidad, la gestión pública y el comercio internacional
+                </strong>{" "}
+                no pueden tratarse como áreas aisladas. Ya sea optimizando la recaudación de un municipio o estructurando la
+                primera exportación de una PyME, el compromiso es el mismo: maximizar resultados minimizando riesgos.
+              </p>
+            </Reveal>
+
+            <Reveal delay={200}>
+              <figure className="mt-12 rounded-3xl bg-navy-900 p-8 text-white sm:p-10">
+                <svg className="h-8 w-8 text-gold" viewBox="0 0 32 32" fill="currentColor" aria-hidden>
+                  <path d="M9.3 25.6c-2.6 0-4.6-2-4.6-5.3 0-5.2 3.7-10.6 9-13.3l1.1 1.7c-3.5 2-5.6 4.8-5.9 7.6.4-.2.9-.3 1.5-.3 2.4 0 4.2 1.8 4.2 4.4 0 2.9-2.3 5.2-5.3 5.2zm13.6 0c-2.6 0-4.6-2-4.6-5.3 0-5.2 3.7-10.6 9-13.3l1.1 1.7c-3.5 2-5.6 4.8-5.9 7.6.4-.2.9-.3 1.5-.3 2.4 0 4.2 1.8 4.2 4.4 0 2.9-2.3 5.2-5.3 5.2z" />
+                </svg>
+                <blockquote className="mt-5 font-serif text-xl font-light leading-relaxed sm:text-2xl">
+                  Su capital no admite errores. Todas nuestras proyecciones cuentan con el respaldo de un profesional
+                  matriculado en el CPCEER.
+                </blockquote>
+                <figcaption className="mt-8 flex items-center justify-between border-t border-white/15 pt-6">
+                  <span className="font-serif text-2xl italic text-gold">J. A. Scheifler</span>
+                  <span className="text-[0.65rem] font-semibold uppercase tracking-eyebrow text-white/50">
+                    Respaldo certificado
+                  </span>
+                </figcaption>
+              </figure>
+            </Reveal>
+          </div>
         </div>
       </section>
-      <section id="sobre-mi" className="py-24 bg-white text-center">
-            <div className="max-w-4xl mx-auto px-4">
-                <h2 className="text-sm font-bold tracking-[0.2em] text-brand-gold uppercase mb-2">INSTITUCIONAL</h2>
-                <h3 className="text-3xl md:text-5xl font-bold text-brand-blue mb-10 font-serif">
-                    Cuentas Claras. <span className="text-brand-gold">Negocios Seguros.</span>
-                    </h3>
 
-                    <div className="mb-14 max-w-3xl mx-auto">
-                        <p className="text-lg text-gray-600 leading-relaxed mb-6 font-light">
-                            Somos una firma de consultoría estratégica radicada en Entre Ríos, con una visión que trasciende las fronteras locales. 
-                            Entendemos que en la economía actual, <strong>la contabilidad, la gestión pública y el comercio internacional</strong> no pueden tratarse como áreas aisladas.
-                        </p>
-                        <p className="text-lg text-gray-600 leading-relaxed font-light">
-                            Nuestro enfoque combina el <strong>rigor técnico</strong> de la matriculación profesional con la <strong>agilidad comercial</strong> necesaria para los negocios modernos. 
-                            Ya sea optimizando la recaudación de un municipio o estructurando la primera exportación de una PyME, nuestro compromiso es el mismo: 
-                            maximizar sus resultados minimizando sus riesgos.
-                        </p>
-                    </div>
-
-                            {/* Tarjeta de Respaldo Profesional */}
-                    <div className="bg-white border-l-4 border-brand-blue p-8 shadow-2xl relative inline-block text-left max-w-2xl mx-auto transform hover:-translate-y-1 transition-transform duration-300">
-                        <p className="text-xl text-gray-700 italic leading-relaxed mb-6 font-serif">
-                        "Su capital no admite errores. Todas nuestras proyecciones cuentan con el respaldo legal de un profesional matriculado en el <strong>CPCEER</strong>."
-                        </p>
-                    <div className="text-brand-blue opacity-80 flex justify-end items-center gap-3">
-                        <span className="text-xs font-bold tracking-widest uppercase text-brand-gold">Respaldo Certificado</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                            <polyline points="14 2 14 8 20 8"></polyline>
-                            <line x1="16" y1="13" x2="8" y2="13"></line>
-                            <line x1="16" y1="17" x2="8" y2="17"></line>
-                            <polyline points="10 9 9 9 8 9"></polyline>
-                        </svg>
-                    </div>
-                 </div>
-             </div>
-        </section>
-
-      {/* 👇 AQUÍ ESTÁ EL CAMBIO IMPORTANTE 👇
-        Reemplazamos la sección vieja por el componente que lee la base de datos 
-      */}
+      {/* ───────────────────────── PRENSA ───────────────────────── */}
       <NewsSection />
 
-      {/* --- AGENDA SECTION (INTACTA) --- */}
-      <section id="agenda" className="py-20 bg-brand-blue text-center relative overflow-hidden">
-        {/* Patrón de fondo sutil */}
-        <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
-        
-        <div className="max-w-4xl mx-auto px-4 relative z-10">
-            <h2 className="text-3xl md:text-4xl font-serif font-bold text-white mb-6">
-                ¿Necesita un diagnóstico rápido?
+      {/* ───────────────────────── AGENDA ───────────────────────── */}
+      <section id="agenda" className="bg-paper px-3 pb-3 sm:px-5 sm:pb-5">
+        <div className="grain relative overflow-hidden rounded-[2rem] bg-navy-900 px-6 py-20 text-center text-white sm:rounded-[2.5rem] sm:py-28">
+          <div className="meridians pointer-events-none absolute inset-0" />
+          <div className="pointer-events-none absolute left-1/2 top-full h-[30rem] w-[60rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold/20 blur-3xl" />
+          <Reveal className="relative mx-auto max-w-3xl">
+            <span className="eyebrow text-gold">Videollamada · 30 minutos</span>
+            <h2 className="mt-8 font-serif text-display-lg font-light">
+              ¿Necesita un <span className="italic text-gold">diagnóstico rápido?</span>
             </h2>
-            <p className="text-xl text-gray-300 mb-10 leading-relaxed max-w-2xl mx-auto">
-                Sabemos que los tiempos empresariales y públicos apremian. 
-                Coordine una videollamada de 30 minutos directamente en nuestra agenda para evaluar su situación.
+            <p className="mx-auto mt-8 max-w-xl text-lg leading-relaxed text-white/65">
+              Los tiempos empresariales y públicos apremian. Coordine una videollamada directamente en nuestra agenda y
+              evaluemos su situación.
             </p>
-
-            <a href="https://calendar.app.google/mva39qFrowM7Lzk97" target="_blank" rel="noopener noreferrer" className="inline-flex items-center group bg-white text-brand-blue border-2 border-white px-8 py-4 rounded-sm font-bold tracking-widest uppercase hover:bg-brand-gold hover:border-brand-gold hover:text-white transition-all duration-300 shadow-xl">
-                <svg className="w-6 h-6 mr-3 text-brand-gold group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                </svg>
-                Agendar Videollamada
-            </a>
-
-            <p className="mt-6 text-sm text-gray-400">
-                Sincronizado directamente con Google Calendar
-            </p>
+            <div className="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <a href={SITE.calendar} target="_blank" rel="noopener noreferrer" className="btn-gold">
+                Agendar videollamada
+                <Arrow />
+              </a>
+              <a href={whatsappLink()} target="_blank" rel="noopener noreferrer" className="btn-ghost-light">
+                Escribir por WhatsApp
+              </a>
+            </div>
+            <p className="mt-8 text-xs text-white/40">Sincronizado con Google Calendar</p>
+          </Reveal>
         </div>
       </section>
 
-      {/* --- SECCIÓN FAQ --- */}
-        <section id="faq" className="py-20 bg-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-            <h2 className="text-sm font-bold tracking-[0.2em] text-brand-gold uppercase mb-2">DUDAS COMUNES</h2>
-            <h3 className="text-3xl md:text-4xl font-serif font-bold text-brand-blue">
-                Preguntas Frecuentes
-            </h3>
+      {/* ───────────────────────── FAQ ───────────────────────── */}
+      <section id="faq" className="bg-paper py-24 sm:py-36">
+        <div className="container-site grid gap-14 lg:grid-cols-12">
+          <Reveal className="lg:col-span-4">
+            <div className="lg:sticky lg:top-32">
+              <span className="eyebrow text-gold-dark">Dudas comunes</span>
+              <h2 className="mt-6 font-serif text-display-md font-light text-navy-900">
+                Preguntas <span className="italic">frecuentes</span>
+              </h2>
+              <p className="mt-6 max-w-sm leading-relaxed text-navy-900/60">
+                ¿No encuentra su respuesta? Pregúntele a IAn, nuestro asistente, o escríbanos directamente.
+              </p>
             </div>
+          </Reveal>
 
-            <div className="space-y-4">
-            {/* Pregunta 1 */}
-            <details className="group bg-gray-50 rounded-sm overflow-hidden transition-all duration-300 open:bg-white open:shadow-lg border border-transparent open:border-gray-200">
-                <summary className="flex justify-between items-center font-bold cursor-pointer list-none p-6 text-brand-blue text-lg select-none">
-                <span>¿Ustedes reemplazan a mi Estudio Contable actual?</span>
-                <span className="transition group-open:rotate-180">
-                    <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
-                </span>
-                </summary>
-                <div className="text-gray-600 px-6 pb-6 leading-relaxed text-base font-light">
-                <strong>No, lo potenciamos.</strong> No somos un estudio contable tradicional que liquida impuestos mensuales; somos una <strong>Consultora de Negocios y Comercio Exterior</strong>. Mientras su contador se asegura de cumplir con AFIP (mirando el pasado), nosotros analizamos sus costos y su estructura comercial para proyectar el crecimiento (mirando el futuro). Trabajamos en equipo con su administración actual.
-                </div>
-            </details>
-
-            {/* Pregunta 2 */}
-            <details className="group bg-gray-50 rounded-sm overflow-hidden transition-all duration-300 open:bg-white open:shadow-lg border border-transparent open:border-gray-200">
-                <summary className="flex justify-between items-center font-bold cursor-pointer list-none p-6 text-brand-blue text-lg select-none">
-                <span>Ya tengo Despachante de Aduana, ¿para qué necesito un Licenciado?</span>
-                <span className="transition group-open:rotate-180">
-                    <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
-                </span>
-                </summary>
-                <div className="text-gray-600 px-6 pb-6 leading-relaxed text-base font-light">
-                Es una distinción clave: el Despachante es nuestro socio operativo (hace el trámite ante Aduana), pero el <strong>Licenciado en Comercio Internacional define la estrategia</strong>. Nosotros analizamos si el precio es correcto, la logística más eficiente, cómo recuperar reintegros y la estructuración financiera. No solo hacemos que la carga salga, hacemos que la operación sea <strong>rentable</strong>.
-                </div>
-            </details>
-
-            {/* Pregunta 3 */}
-            <details className="group bg-gray-50 rounded-sm overflow-hidden transition-all duration-300 open:bg-white open:shadow-lg border border-transparent open:border-gray-200">
-                <summary className="flex justify-between items-center font-bold cursor-pointer list-none p-6 text-brand-blue text-lg select-none">
-                <span>¿Trabajan únicamente con empresas que ya exportan?</span>
-                <span className="transition group-open:rotate-180">
-                    <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
-                </span>
-                </summary>
-                <div className="text-gray-600 px-6 pb-6 leading-relaxed text-base font-light">
-                No. Trabajamos con cualquier PyME o Municipio que quiera ordenar sus números para crecer. La mentalidad de "Comercio Internacional" implica <strong>eficiencia y competitividad</strong>, cualidades que sirven tanto para vender en China como en el mercado local. Si su estructura es eficiente puertas adentro, la exportación es una consecuencia natural.
-                </div>
-            </details>
-
-            {/* Pregunta 4 */}
-            <details className="group bg-gray-50 rounded-sm overflow-hidden transition-all duration-300 open:bg-white open:shadow-lg border border-transparent open:border-gray-200">
-                <summary className="flex justify-between items-center font-bold cursor-pointer list-none p-6 text-brand-blue text-lg select-none">
-                <span>¿Qué aporta un perfil de Comercio Exterior a un Municipio?</span>
-                <span className="transition group-open:rotate-180">
-                    <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
-                </span>
-                </summary>
-                <div className="text-gray-600 px-6 pb-6 leading-relaxed text-base font-light">
-                Aporta una visión de <strong>Desarrollo Productivo</strong>. Entendemos qué necesitan las empresas locales para crecer y generar empleo. Nuestra "Ingeniería Fiscal" no busca solo recaudar tasas, sino crear un ecosistema donde al privado le convenga producir. Ayudamos al Municipio a gestionar sus recursos con la misma eficiencia que una empresa exportadora.
-                </div>
-            </details>
-
-            {/* Pregunta 5 */}
-            <details className="group bg-gray-50 rounded-sm overflow-hidden transition-all duration-300 open:bg-white open:shadow-lg border border-transparent open:border-gray-200">
-                <summary className="flex justify-between items-center font-bold cursor-pointer list-none p-6 text-brand-blue text-lg select-none">
-                <span>Mi empresa es familiar, ¿es viable contratar consultoría externa?</span>
-                <span className="transition group-open:rotate-180">
-                    <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
-                </span>
-                </summary>
-                <div className="text-gray-600 px-6 pb-6 leading-relaxed text-base font-light">
-                Precisamente las estructuras familiares son las que más se benefician de una "Gerencia Externa". Al no tener los costos fijos de contratar un Gerente de Comex o de Finanzas a tiempo completo, usted accede a un servicio profesional por objetivos. <strong>Profesionalizamos la toma de decisiones</strong> sin cargar su estructura de costos fijos.
-                </div>
-            </details>
-            </div>
-        </div>
-        </section>
-
-      {/* --- CONTACTO SECTION (INTACTA) --- */}
-      <section id="contacto" className="py-20 bg-brand-gray/30">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-10">
-                <h2 className="text-3xl font-bold text-brand-blue mb-3">Hablemos de Negocios</h2>
-                <p className="text-gray-600">Complete el formulario y analizaré su caso a la brevedad.</p>
-            </div>
-
-            <div className="bg-white p-8 md:p-10 rounded-sm shadow-lg border-t-4 border-brand-green">
-                <form action="https://formspree.io/f/xojdnjqa" method="POST" className="space-y-6">
-    
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nombre o Empresa</label>
-                        <input type="text" name="nombre" required 
-                               className="w-full px-4 py-3 border border-gray-300 rounded-sm focus:ring-2 focus:ring-brand-blue focus:border-brand-blue transition-colors outline-none" />
-                    </div>
-                
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                            <input type="email" name="email" required 
-                                   className="w-full px-4 py-3 border border-gray-300 rounded-sm focus:ring-2 focus:ring-brand-blue focus:border-brand-blue transition-colors outline-none" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp</label>
-                            <input type="tel" name="telefono" 
-                                   className="w-full px-4 py-3 border border-gray-300 rounded-sm focus:ring-2 focus:ring-brand-blue focus:border-brand-blue transition-colors outline-none" />
-                        </div>
-                    </div>
-                
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Asunto</label>
-                        <select name="asunto" 
-                                className="w-full px-4 py-3 border border-gray-300 rounded-sm focus:ring-2 focus:ring-brand-blue focus:border-brand-blue outline-none bg-white">
-                            <option value="Consulta General">Consulta General</option>
-                            <option value="Asesoria Contable">Asesoría Contable</option>
-                            <option value="Comex">Comercio Exterior</option>
-                            <option value="Sector Publico">Sector Público</option>
-                        </select>
-                    </div>
-                
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Mensaje</label>
-                        <textarea name="mensaje" rows={4} required 
-                                  className="w-full px-4 py-3 border border-gray-300 rounded-sm focus:ring-2 focus:ring-brand-blue focus:border-brand-blue outline-none"></textarea>
-                    </div>
-                
-                    <button type="submit" className="w-full py-4 bg-brand-blue text-white font-bold tracking-widest uppercase rounded-sm hover:bg-opacity-90 transition-all shadow-md">
-                        Enviar Consulta
-                    </button>
-                </form>
-            </div>
+          <div className="lg:col-span-8">
+            {FAQ.map((f, i) => (
+              <Reveal key={f.q} delay={i * 60}>
+                <details className="group border-t border-navy-900/15 last:border-b" open={i === 0}>
+                  <summary className="flex cursor-pointer list-none items-start justify-between gap-8 py-8">
+                    <span className="flex gap-6">
+                      <span className="pt-1.5 font-serif text-sm italic text-gold-dark">0{i + 1}</span>
+                      <span className="font-serif text-xl leading-snug text-navy-900 transition-colors group-hover:text-gold-dark sm:text-2xl">
+                        {f.q}
+                      </span>
+                    </span>
+                    <span className="relative mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-navy-900/15 transition-all duration-300 group-open:rotate-45 group-open:border-gold group-open:bg-gold">
+                      <svg className="h-4 w-4 text-navy-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+                        <path strokeLinecap="round" strokeWidth={1.75} d="M12 5v14M5 12h14" />
+                      </svg>
+                    </span>
+                  </summary>
+                  <div className="pb-9 pl-10 pr-4 text-[1.05rem] leading-relaxed text-navy-900/65 sm:pl-12 sm:pr-16 [&_strong]:font-semibold [&_strong]:text-navy-900">
+                    {f.a}
+                  </div>
+                </details>
+              </Reveal>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* --- FOOTER (CON ACCESO SECRETO AL ADMIN) --- */}
-      <footer className="bg-brand-blue text-gray-300 py-16 border-t border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
-                <div className="border-l-2 border-brand-gold pl-6">
-                    <h4 className="text-white text-xl font-bold mb-4 font-serif">Estudio Scheifler & Asoc.</h4>
-                    <p className="text-sm leading-relaxed text-gray-400">Desarrollo Comercial y Negocios Internacionales.<br />Matriculado CPCEER.</p>
-                </div>
-                <div>
-                    <h4 className="text-white font-bold mb-6 border-b border-brand-gold inline-block pb-2">Contacto Directo</h4>
-                    <div className="space-y-4">
-                        <a href="https://wa.me/5493454948738" target="_blank" className="flex items-center hover:text-white transition-colors">
-                            <span className="text-2xl mr-3">📱</span> Nuestro whatsapp
-                        </a>
-                        <a href="mailto:direccion@estudioscheifler.com.ar" className="flex items-center hover:text-white transition-colors">
-                            <span className="text-2xl mr-3">✉️</span> Nuestro Mail
-                        </a>
-                    </div>
-                </div>
-                <div>
-                    <h4 className="text-white font-bold mb-6 border-b border-brand-gold inline-block pb-2">Más Información</h4>
-                    <a href="https://linktr.ee/EstudioScheifler" target="_blank" className="inline-block bg-brand-gold text-brand-blue px-6 py-3 rounded-sm font-bold text-sm hover:bg-white transition-colors">
-                        Ver Linktree Oficial
-                    </a>
-                </div>
-            </div>
-            <div className="text-center pt-8 border-t border-white/10 text-xs text-gray-500">
-                <p>&copy; 2024 Estudio Scheifler & Asoc. Todos los derechos reservados.</p>
-                
-                {/* 👇 BOTÓN SECRETO PARA EL ADMIN 👇 */}
-                <div className="mt-4 flex justify-center opacity-10 hover:opacity-100 transition-opacity">
-                    <Link href="/admin" title="Acceso Administrativo">
-                        <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                        </svg>
-                    </Link>
-                </div>
+      {/* ───────────────────────── CONTACTO ───────────────────────── */}
+      <section id="contacto" className="border-t border-line bg-white py-24 sm:py-36">
+        <div className="container-site grid gap-16 lg:grid-cols-12">
+          <Reveal className="lg:col-span-5">
+            <span className="eyebrow text-gold-dark">Contacto</span>
+            <h2 className="mt-6 font-serif text-display-lg font-light text-navy-900">
+              Hablemos de <span className="italic text-gold-dark">negocios.</span>
+            </h2>
+            <p className="mt-8 max-w-md text-lg leading-relaxed text-navy-900/60">
+              Complete el formulario y analizo su caso personalmente. Si prefiere algo más inmediato, elija el canal que le
+              quede más cómodo.
+            </p>
 
+            <ul className="mt-12 divide-y divide-navy-900/10 border-y border-navy-900/10">
+              {[
+                { k: "WhatsApp", v: SITE.whatsappDisplay, href: whatsappLink(), ext: true },
+                { k: "Email", v: SITE.email, href: `mailto:${SITE.email}`, ext: false },
+                { k: "Videollamada", v: "Agendar 30 minutos", href: SITE.calendar, ext: true },
+              ].map((c) => (
+                <li key={c.k}>
+                  <a
+                    href={c.href}
+                    {...(c.ext ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                    className="group flex items-center justify-between gap-4 py-5"
+                  >
+                    <span>
+                      <span className="block text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-navy-900/45">{c.k}</span>
+                      <span className="mt-1 block break-all text-navy-900 transition-colors group-hover:text-gold-dark">{c.v}</span>
+                    </span>
+                    <Arrow className="h-4 w-4 shrink-0 text-gold transition-transform group-hover:translate-x-1" />
+                  </a>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-6 text-sm text-navy-900/45">{SITE.location}</p>
+          </Reveal>
+
+          <Reveal delay={150} className="lg:col-span-6 lg:col-start-7">
+            <div className="rounded-[2rem] border border-navy-900/[0.08] bg-paper p-7 sm:p-12">
+              <ContactForm />
             </div>
+          </Reveal>
         </div>
-    </footer>
+      </section>
     </main>
   );
 }
