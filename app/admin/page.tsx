@@ -1,100 +1,125 @@
-'use client'
-import { createPost } from "../actions"
-import { useState, useRef } from "react"
+"use client";
+
+import { useRef, useState } from "react";
+import { useFormStatus } from "react-dom";
+import { createPost, type ActionResult } from "../actions";
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button type="submit" disabled={pending} className="btn-gold w-full disabled:opacity-60">
+      {pending ? "Publicando…" : "Publicar nota"}
+    </button>
+  );
+}
+
+const input =
+  "w-full rounded-xl border border-navy-900/15 bg-white px-4 py-3 text-navy-900 transition-colors placeholder:text-navy-900/30 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/30";
+const label = "mb-2 block text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-navy-900/55";
 
 export default function AdminPage() {
-  const [mensaje, setMensaje] = useState("")
-  const formRef = useRef<HTMLFormElement>(null)
+  const [result, setResult] = useState<ActionResult | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   async function handleSubmit(formData: FormData) {
-    const res = await createPost(formData)
-    setMensaje(res.message)
-    if (res.success) {
-      formRef.current?.reset()
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    const res = await createPost(formData);
+    setResult(res);
+    if (res.success) formRef.current?.reset();
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-32 pb-20 px-4">
-      <div className="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-200">
-        <h1 className="text-3xl font-serif font-bold text-brand-blue mb-2">
-          ✍️ Editor de Noticias
+    <main className="min-h-screen bg-paper pb-24 pt-32 sm:pt-40">
+      <div className="container-site max-w-4xl">
+        <span className="eyebrow text-gold-dark">Panel interno</span>
+        <h1 className="mt-5 font-serif text-display-md font-light text-navy-900">
+          Editor de <span className="italic">notas</span>
         </h1>
-        <p className="text-gray-500 mb-8 text-sm">
-          Completá cada campo por separado para asegurar el formato periodístico perfecto.
+        <p className="mt-4 max-w-xl text-navy-900/60">
+          Completá cada campo por separado. El cuerpo acepta Markdown: <code>**negrita**</code>, <code>## subtítulo</code>,{" "}
+          <code>&gt; cita</code> y listas con <code>-</code>.
         </p>
 
-        <form ref={formRef} action={handleSubmit} className="space-y-6">
-          
-          {/* SECCIÓN 1: ENCABEZADO */}
-          <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 space-y-4">
-              <h3 className="font-bold text-gray-400 text-xs uppercase tracking-wider">Encabezado</h3>
-              
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Título Principal</label>
-                <input name="title" required placeholder="Ej: El dólar en bandas..." className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue outline-none text-lg font-bold" />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Bajada / Copete (Saldrá en Cursiva)</label>
-                <textarea name="subtitle" rows={3} placeholder="Resumen corto que va debajo del título..." className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue outline-none italic text-gray-600" />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Autor (Saldrá en Negrita)</label>
-                <input name="author" defaultValue="Por José A. Scheifler (*)" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue outline-none font-bold" />
-              </div>
+        {result && (
+          <div
+            role="status"
+            className={`mt-8 rounded-2xl border px-5 py-4 text-sm font-medium ${
+              result.success ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-800"
+            }`}
+          >
+            {result.message}
           </div>
+        )}
 
-          {/* SECCIÓN 2: METADATA */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form ref={formRef} action={handleSubmit} className="mt-10 space-y-6">
+          <fieldset className="space-y-5 rounded-3xl border border-navy-900/[0.08] bg-white/60 p-6 sm:p-8">
+            <legend className="px-2 font-serif text-lg text-navy-900">Encabezado</legend>
             <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Categoría</label>
-                <select name="category" className="w-full p-3 border border-gray-300 rounded-lg bg-white outline-none">
-                    <option value="ANÁLISIS">Análisis</option>
-                    <option value="OPINIÓN">Opinión</option>
-                    <option value="ECONOMÍA">Economía</option>
-                    <option value="NOVEDADES">Novedades</option>
-                </select>
+              <label htmlFor="a-title" className={label}>Título principal</label>
+              <input id="a-title" name="title" required maxLength={300} placeholder="Ej: El dólar en bandas…" className={`${input} font-serif text-xl`} />
             </div>
             <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Medio / Fuente</label>
-                <input name="source" placeholder="Ej: Diario Junio" defaultValue="Estudio Scheifler" className="w-full p-3 border border-gray-300 rounded-lg outline-none" />
+              <label htmlFor="a-sub" className={label}>Bajada / copete</label>
+              <textarea id="a-sub" name="subtitle" rows={3} maxLength={1000} placeholder="Resumen corto que va debajo del título. También se usa en las tarjetas." className={`${input} font-serif italic`} />
             </div>
-          </div>
+            <div>
+              <label htmlFor="a-author" className={label}>Autor</label>
+              <input id="a-author" name="author" defaultValue="Por José A. Scheifler (*)" className={input} />
+            </div>
+          </fieldset>
 
-          {/* SECCIÓN 3: MULTIMEDIA */}
-          <div className="bg-blue-50 p-5 rounded-xl border border-blue-100 space-y-4">
+          <fieldset className="grid gap-5 rounded-3xl border border-navy-900/[0.08] bg-white/60 p-6 sm:grid-cols-2 sm:p-8">
+            <legend className="px-2 font-serif text-lg text-navy-900">Clasificación y medios</legend>
             <div>
-                <label className="block text-xs font-bold text-blue-800 mb-1">URL de la Imagen</label>
-                <input name="imageUrl" placeholder="Pegar link de la foto..." className="w-full p-3 border border-blue-200 rounded-lg text-sm bg-white" />
+              <label htmlFor="a-cat" className={label}>Categoría</label>
+              <select id="a-cat" name="category" className={input}>
+                <option value="ANÁLISIS">Análisis</option>
+                <option value="OPINIÓN">Opinión</option>
+                <option value="ECONOMÍA">Economía</option>
+                <option value="ECONOMÍA REGIONAL">Economía regional</option>
+                <option value="COMERCIO EXTERIOR">Comercio exterior</option>
+                <option value="NOVEDADES">Novedades</option>
+              </select>
             </div>
             <div>
-                <label className="block text-xs font-bold text-blue-800 mb-1">🔗 Link Fuente Original (Opcional)</label>
-                <input name="externalUrl" placeholder="https://..." className="w-full p-3 border border-blue-200 rounded-lg text-sm bg-white" />
+              <label htmlFor="a-src" className={label}>Medio / fuente</label>
+              <input id="a-src" name="source" defaultValue="Estudio Scheifler" placeholder="Ej: Diario Junio" className={input} />
             </div>
-          </div>
+            <div>
+              <label htmlFor="a-img" className={label}>URL de la imagen</label>
+              <input id="a-img" name="imageUrl" type="url" placeholder="https://…" className={input} />
+            </div>
+            <div>
+              <label htmlFor="a-ext" className={label}>Link a la fuente original (opcional)</label>
+              <input id="a-ext" name="externalUrl" type="url" placeholder="https://…" className={input} />
+            </div>
+          </fieldset>
 
-          {/* SECCIÓN 4: CUERPO */}
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">Cuerpo de la Nota (Letra Capital Automática)</label>
-            <textarea name="content" required rows={12} placeholder="Escribí acá el desarrollo de la nota. No hace falta poner título ni autor de nuevo." className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-gold outline-none font-serif text-gray-700 leading-relaxed" />
+            <label htmlFor="a-body" className={label}>Cuerpo de la nota</label>
+            <textarea
+              id="a-body"
+              name="content"
+              required
+              rows={16}
+              placeholder="Escribí acá el desarrollo de la nota. No hace falta repetir título ni autor."
+              className={`${input} font-serif text-lg leading-relaxed`}
+            />
           </div>
 
-          {/* SEGURIDAD */}
-          <div className="bg-red-50 p-4 rounded-lg border border-red-100">
-            <label className="block text-xs font-bold text-red-800 mb-2">🔒 Clave Admin</label>
-            <input type="password" name="password" required className="w-full p-2 border border-red-200 rounded text-sm" />
+          <div className="grid gap-5 rounded-3xl bg-navy-900 p-6 sm:grid-cols-[1fr_auto] sm:items-end sm:p-8">
+            <div>
+              <label htmlFor="a-pass" className="mb-2 block text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-gold">
+                Clave de administrador
+              </label>
+              <input id="a-pass" type="password" name="password" required autoComplete="current-password" className={input} />
+            </div>
+            <div className="sm:w-56">
+              <SubmitButton />
+            </div>
           </div>
-
-          <button type="submit" className="w-full bg-brand-blue text-white py-4 rounded-lg font-bold hover:bg-blue-900 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1">
-            PUBLICAR NOTA
-          </button>
-
-          {mensaje && <p className="text-center font-bold mt-4 p-3 bg-gray-100 rounded">{mensaje}</p>}
         </form>
       </div>
-    </div>
-  )
+    </main>
+  );
 }

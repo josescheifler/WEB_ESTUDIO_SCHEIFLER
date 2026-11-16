@@ -1,72 +1,132 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
+import { SITE, whatsappLink } from "@/lib/site";
 
-// 👇 PEGA TU CLAVE DE CLAUDE ACÁ (Empieza con sk-ant-...)
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY, 
-});
+// La clave va SOLO en la variable de entorno ANTHROPIC_API_KEY (Netlify → Environment variables).
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+// Haiku: rápido y económico, ideal para un chat de web. Se puede cambiar sin tocar código
+// con la variable de entorno ANTHROPIC_MODEL.
+const MODEL = process.env.ANTHROPIC_MODEL || "claude-haiku-5-5";
+
+const MAX_MESSAGE_CHARS = 1500;
+const MAX_HISTORY = 12; // últimos mensajes que se mandan como contexto
+const MAX_TOTAL_CHARS = 9000;
+
+const SYSTEM_PROMPT = `
+Sos "IAn", el asistente virtual del ${SITE.name}.
+
+PERSONALIDAD
+- Cercano, resolutivo y con buena onda, pero siempre profesional. Español rioplatense (vos).
+- Respuestas breves: 2 a 5 oraciones o una lista corta. Usá emojis con moderación.
+- No inventes precios, plazos, normativa puntual ni datos que no conozcas: en esos casos ofrecé que José lo analice.
+- Si te preguntan algo fuera de los servicios del estudio, respondé corto y volvé al tema.
+
+SERVICIOS
+1. Comercio exterior: importación y exportación, inteligencia comercial, costos FOB y landed cost, sourcing y pagos al exterior, logística y aduana (en equipo con el despachante).
+2. Ingeniería de costos: detectar fugas de dinero, rentabilidad real y precios estratégicos.
+3. Consultoría estratégica: gerenciamiento externo, diagnóstico empresarial, auditoría y reingeniería de procesos.
+4. Sector público: modernización de municipios, ingeniería fiscal y mejora de la recaudación con foco en desarrollo productivo.
+
+DATOS
+- Lidera el estudio el Lic. José Antonio Scheifler, Licenciado en Comercio Internacional, matriculado en el CPCEER.
+- Ubicación: ${SITE.location}. Atiende clientes de todo el país y del exterior.
+- En la web se puede agendar una videollamada de 30 minutos: [Agendar videollamada](${SITE.calendar})
+
+LINKS (usá SIEMPRE este formato Markdown para que se puedan clicar)
+- WhatsApp: [${SITE.whatsappDisplay}](${whatsappLink()})
+- Email: [${SITE.email}](mailto:${SITE.email})
+
+OBJETIVO
+Entender qué necesita la persona y llevarla a un próximo paso concreto: WhatsApp o videollamada.
+`.trim();
+
+type ChatMessage = { role: "user" | "assistant"; content: string };
+
+function parseMessages(body: unknown): ChatMessage[] | null {
+  if (!body || typeof body !== "object") return null;
+  const b = body as { messages?: unknown; message?: unknown };
+
+  // Compatibilidad con el formato viejo { message: "..." }
+  const raw: unknown[] = Array.isArray(b.messages)
+    ? b.messages
+    : typeof b.message === "string"
+      ? [{ role: "user", content: b.message }]
+      : [];
+
+  const clean: ChatMessage[] = [];
+  for (const m of raw.slice(-MAX_HISTORY)) {
+    if (!m || typeof m !== "object") continue;
+    const { role, content } = m as { role?: unknown; content?: unknown };
+    if ((role !== "user" && role !== "assistant") || typeof content !== "string") continue;
+    const text = content.trim().slice(0, MAX_MESSAGE_CHARS);
+    if (!text) continue;
+    // La API exige alternar roles: fusionamos mensajes seguidos del mismo rol.
+    const last = clean[clean.length - 1];
+    if (last && last.role === role) last.content += "\n\n" + text;
+    else clean.push({ role, content: text });
+  }
+
+  while (clean.length && clean[0].role !== "user") clean.shift();
+  if (!clean.length || clean[clean.length - 1].role !== "user") return null;
+
+  let total = clean.reduce((n, m) => n + m.content.length, 0);
+  while (total > MAX_TOTAL_CHARS && clean.length > 1) {
+    total -= clean.shift()!.content.length;
+    while (clean.length && clean[0].role !== "user") total -= clean.shift()!.content.length;
+  }
+  return clean.length ? clean : null;
+}
 
 export async function POST(req: Request) {
+  const ip = clientIp(req.headers);
+
+  // 8 mensajes por minuto y 40 por hora por IP: suficiente para una charla real,
+  // corta scripts que quieran gastar créditos.
+  const burst = rateLimit(`chat:m:${ip}`, 8, 60_000);
+  const hourly = rateLimit(`chat:h:${ip}`, 40, 3_600_000);
+  if (!burst.ok || !hourly.ok) {
+    return NextResponse.json(
+      {
+        error: "rate_limited",
+        response: `Uy, vamos muy rápido 😅. Esperá un ratito o seguimos por [WhatsApp](${whatsappLink()}).`,
+      },
+      { status: 429 },
+    );
+  }
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.error("[chat] Falta ANTHROPIC_API_KEY");
+    return NextResponse.json({ error: "not_configured" }, { status: 503 });
+  }
+
+  let body: unknown;
   try {
-    const { message } = await req.json();
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "bad_request" }, { status: 400 });
+  }
 
-    // Usamos el modelo "Haiku" que es el más rápido y barato (ideal para chat web)
-    // Si querés más inteligencia, cambiá "claude-3-haiku-20240307" por "claude-3-5-sonnet-20240620"
+  const messages = parseMessages(body);
+  if (!messages) return NextResponse.json({ error: "bad_request" }, { status: 400 });
+
+  try {
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1024,
-      system: `
-       Sos "IAn", el asistente virtual inteligente (y con buena onda) del Estudio Scheifler & Asoc.
-      
-      --- TU PERSONALIDAD ---
-      - Sos divertido, dinámico y resolutivo.
-      - No sos un robot aburrido: usá emojis, sé empático y hablá en un tono cercano (pero respetuoso).
-      - Tu misión: Que el cliente sienta que está hablando con un experto que le va a solucionar la vida, y llevarlo al WhatsApp.
-
-      --- LO QUE SABÉS HACER (Tus Servicios) ---
-      1. 🌍 COMERCIO EXTERIOR (Tu especialidad):
-         - Importación y Exportación.
-         - Desarrollo de negocios internacionales y búsqueda de proveedores.
-         - Logística y aduanas.
-      
-      2. 💰 INGENIERÍA DE COSTOS:
-         - Detectás fugas de dinero y calculás la rentabilidad real.
-         - Ayudás a fijar precios estratégicos.
-      
-      3. 📊 CONSULTORÍA ESTRATÉGICA:
-         - Gerenciamiento externo (sos un socio más).
-         - Diagnóstico empresarial y reingeniería de procesos.
-
-      4. 🏛️ ASESORÍA AL SECTOR PÚBLICO:
-         - Modernización de municipios.
-         - Ingeniería fiscal y mejora de recaudación.
-
-      --- REGLA DE ORO PARA LINKS (¡Muy Importante!) ---
-      Si mencionás el WhatsApp o Email, SIEMPRE usá este formato exacto para que sean clicables:
-      - WhatsApp: 👉 [+54 9 345 4948738](https://wa.me/5493454948738)
-      - Email: 👉 [direccion@estudioscheifler.com.ar](mailto:direccion@estudioscheifler.com.ar)
-
-      --- DATOS CLAVE ---
-      - Líder del Estudio: Lic. José Antonio Scheifler.
-      - Ubicación: Los Charrúas, Entre Ríos (pero atendés al mundo).
-      - En la pagina, pueden directamnte agendar una videollamada con José
-
-      OBJETIVO DEL CHAT:
-      Respondé con chispa y profesionalismo, e invitá siempre a seguirla por WhatsApp para cerrar el trato.
-      `,
-      messages: [
-        { role: "user", content: message }
-      ],
+      model: MODEL,
+      max_tokens: 500,
+      system: SYSTEM_PROMPT,
+      messages,
     });
 
-    // Claude devuelve la respuesta en un formato distinto a Google, acá lo extraemos:
-    // @ts-ignore (Ignoramos chequeo estricto de TS acá para hacerlo rápido)
-    const textResponse = response.content[0].text;
+    const text = response.content
+      .flatMap((block) => (block.type === "text" ? [block.text] : []))
+      .join("\n")
+      .trim();
 
-    return NextResponse.json({ response: textResponse });
-
+    return NextResponse.json({ response: text || "Perdón, no te entendí bien. ¿Me lo contás de otra forma?" });
   } catch (error) {
-    console.error("❌ ERROR CLAUDE:", error);
-    return NextResponse.json({ error: "Error de conexión con Claude" }, { status: 500 });
+    console.error("[chat] Error de Anthropic:", error);
+    return NextResponse.json({ error: "upstream_error" }, { status: 502 });
   }
 }

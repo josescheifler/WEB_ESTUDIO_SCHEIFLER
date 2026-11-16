@@ -1,76 +1,148 @@
-"use client"; // Esto es vital para que ande el botón del celular
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import Logo from "./Logo";
+import { SITE } from "@/lib/site";
+
+const LINKS = [
+  { href: "/#empresas", label: "Empresas" },
+  { href: "/#gobierno", label: "Gobierno" },
+  { href: "/#estudio", label: "El Estudio" },
+  { href: "/prensa", label: "Prensa" },
+  { href: "/#faq", label: "Preguntas" },
+];
 
 export default function Navbar() {
-  // Este es el "interruptor" para el menú del celular
-  const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname();
+  const [scrolled, setScrolled] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  // Páginas que arrancan con una portada oscura: el menú va transparente arriba de todo.
+  const darkTop = pathname === "/" || /^\/prensa\/[^/]+$/.test(pathname);
+  const solid = (scrolled || !darkTop) && !open;
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.style.overflow = open ? "hidden" : "";
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  const isActive = (href: string) => href === "/prensa" && pathname.startsWith("/prensa");
 
   return (
-    <nav className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-sm shadow-md transition-all duration-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
-            
-            {/* LOGO */}
-            <Link href="/" className="flex-shrink-0 flex items-center hover:opacity-80 transition-opacity">
-                {/* Asegurate de tener el archivo logo.png en la carpeta 'public' */}
-                <Image 
-                  src="/logo.png" 
-                  alt="Estudio Scheifler" 
-                  width={180} 
-                  height={50} 
-                  className="h-12 w-auto object-contain"
-                  priority // Esto hace que el logo cargue inmediato
-                />
+    <>
+      <header
+        className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
+          solid
+            ? "border-b border-navy-900/[0.06] bg-paper/85 py-3 backdrop-blur-xl backdrop-saturate-150"
+            : "border-b border-transparent bg-transparent py-5"
+        }`}
+      >
+        <nav className="container-site flex items-center justify-between" aria-label="Principal">
+          <Link href="/" aria-label={`${SITE.name} — inicio`} className="relative z-10" onClick={() => setOpen(false)}>
+            <Logo tone={solid ? "dark" : "light"} />
+          </Link>
+
+          <ul className="hidden items-center gap-9 lg:flex">
+            {LINKS.map((l) => (
+              <li key={l.href}>
+                <Link
+                  href={l.href}
+                  className={`link-underline pb-1 text-[0.78rem] font-medium tracking-[0.04em] transition-colors ${
+                    solid ? "text-navy-900/70 hover:text-navy-900" : "text-white/75 hover:text-white"
+                  } ${isActive(l.href) ? (solid ? "!text-navy-900 bg-[length:100%_1px]" : "!text-white bg-[length:100%_1px]") : ""}`}
+                >
+                  {l.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+
+          <div className="flex items-center gap-3">
+            <Link
+              href="/#contacto"
+              className={`hidden rounded-full px-5 py-2.5 text-[0.72rem] font-semibold uppercase tracking-[0.14em] transition-all duration-300 sm:inline-flex ${
+                solid
+                  ? "bg-navy-900 text-white hover:bg-gold hover:text-navy-950"
+                  : "bg-white text-navy-900 hover:bg-gold"
+              }`}
+            >
+              Contacto
             </Link>
 
-            {/* MENÚ DE ESCRITORIO (Desktop) */}
-            <div className="hidden md:flex space-x-6 items-center">
-                <Link href="/#inicio" className="text-xs font-bold tracking-widest text-gray-600 hover:text-brand-blue transition-colors uppercase">Inicio</Link>
-                <Link href="/#empresas" className="text-xs font-bold tracking-widest text-gray-600 hover:text-brand-blue transition-colors uppercase">Empresas</Link>
-                <Link href="/#gobierno" className="text-xs font-bold tracking-widest text-gray-600 hover:text-brand-blue transition-colors uppercase">Gobierno</Link>
-                <Link href="/#estudio" className="text-xs font-bold tracking-widest text-gray-600 hover:text-brand-blue transition-colors uppercase">El Estudio</Link>
-                <Link href="/prensa" className="text-xs font-bold tracking-widest text-brand-blue hover:text-brand-gold transition-colors uppercase border-b-2 border-transparent hover:border-brand-gold">Prensa</Link>
-                
-                <Link href="/#contacto" className="px-6 py-2.5 text-xs font-bold tracking-widest text-white bg-brand-blue hover:bg-brand-gold transition-colors rounded-sm shadow-md uppercase">
-                    Contacto
-                </Link>
-            </div>
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              aria-expanded={open}
+              aria-controls="menu-movil"
+              aria-label={open ? "Cerrar menú" : "Abrir menú"}
+              className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-full transition-colors lg:hidden ${
+                open ? "text-white" : solid ? "text-navy-900" : "text-white"
+              }`}
+            >
+              <span className="relative block h-3 w-6">
+                <span
+                  className={`absolute left-0 h-px w-6 bg-current transition-all duration-300 ${
+                    open ? "top-1.5 rotate-45" : "top-0"
+                  }`}
+                />
+                <span
+                  className={`absolute left-0 h-px bg-current transition-all duration-300 ${
+                    open ? "top-1.5 w-6 -rotate-45" : "top-3 w-4"
+                  }`}
+                />
+              </span>
+            </button>
+          </div>
+        </nav>
+      </header>
 
-            {/* BOTÓN MENÚ CELULAR (Hamburguesa) */}
-            <div className="md:hidden flex items-center">
-                <button 
-                  onClick={() => setIsOpen(!isOpen)}
-                  className="text-gray-600 hover:text-brand-blue focus:outline-none p-2"
+      {/* Menú móvil a pantalla completa */}
+      <div
+        id="menu-movil"
+        className={`fixed inset-0 z-40 flex flex-col bg-navy-950 transition-all duration-500 lg:hidden ${
+          open ? "visible opacity-100" : "invisible opacity-0"
+        }`}
+      >
+        <div className="meridians pointer-events-none absolute inset-0" />
+        <div className="container-site relative flex flex-1 flex-col justify-center pt-24">
+          <ul className="space-y-2">
+            {[{ href: "/", label: "Inicio" }, ...LINKS, { href: "/#contacto", label: "Contacto" }].map((l, i) => (
+              <li
+                key={l.href}
+                className={`transition-all duration-500 ${open ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"}`}
+                style={{ transitionDelay: open ? `${120 + i * 50}ms` : "0ms" }}
+              >
+                <Link
+                  href={l.href}
+                  onClick={() => setOpen(false)}
+                  className="group flex items-baseline gap-4 py-2 font-serif text-4xl text-white sm:text-5xl"
                 >
-                    <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        {isOpen ? (
-                          // Ícono de "Cerrar" (X)
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>
-                        ) : (
-                          // Ícono de "Hamburguesa"
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"/>
-                        )}
-                    </svg>
-                </button>
-            </div>
+                  <span className="font-sans text-xs tabular-nums text-gold">{String(i + 1).padStart(2, "0")}</span>
+                  <span className="transition-colors group-hover:text-gold">{l.label}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="container-site relative border-t border-white/10 py-8 text-sm text-white/60">
+          <a href={`mailto:${SITE.email}`} className="block hover:text-white">
+            {SITE.email}
+          </a>
+          <span className="mt-1 block">{SITE.location}</span>
         </div>
       </div>
-
-      {/* MENÚ DESPLEGABLE CELULAR */}
-      {/* Usamos lógica condicional: Si isOpen es true, mostramos el menú */}
-      <div className={`md:hidden bg-white border-t border-gray-100 absolute w-full shadow-xl transition-all duration-300 ${isOpen ? 'block' : 'hidden'}`}>
-          <div className="px-4 pt-2 pb-6 space-y-1">
-              <Link href="#inicio" onClick={() => setIsOpen(false)} className="block px-3 py-3 text-sm font-bold tracking-wide text-gray-700 hover:text-brand-blue hover:bg-gray-50 rounded-md uppercase">Inicio</Link>
-              <Link href="#empresas" onClick={() => setIsOpen(false)} className="block px-3 py-3 text-sm font-bold tracking-wide text-gray-700 hover:text-brand-blue hover:bg-gray-50 rounded-md uppercase">Empresas</Link>
-              <Link href="#gobierno" onClick={() => setIsOpen(false)} className="block px-3 py-3 text-sm font-bold tracking-wide text-gray-700 hover:text-brand-blue hover:bg-gray-50 rounded-md uppercase">Gobierno</Link>
-              <Link href="#estudio" onClick={() => setIsOpen(false)} className="block px-3 py-3 text-sm font-bold tracking-wide text-gray-700 hover:text-brand-blue hover:bg-gray-50 rounded-md uppercase">El Estudio</Link>
-              <Link href="/prensa" onClick={() => setIsOpen(false)} className="block px-3 py-3 text-sm font-bold tracking-wide text-brand-blue hover:text-brand-gold hover:bg-gray-50 rounded-md uppercase">Prensa & Novedades</Link>
-              <Link href="#contacto" onClick={() => setIsOpen(false)} className="block px-3 py-3 text-sm font-bold tracking-wide text-white bg-brand-blue hover:bg-opacity-90 rounded-md mt-4 text-center uppercase">Contacto</Link>
-          </div>
-      </div>
-    </nav>
+    </>
   );
 }
