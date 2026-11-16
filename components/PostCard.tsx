@@ -1,6 +1,15 @@
 import Link from "next/link";
 import { excerpt, FALLBACK_IMAGE, formatDate, isExternal, type Post } from "@/lib/posts";
 
+/** Nombre del medio a partir del enlace (evita rotular "Estudio Scheifler" una nota publicada en otro sitio). */
+function mediaName(url: string) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "el medio";
+  }
+}
+
 type Props = { post: Post; variant?: "default" | "featured"; tone?: "light" | "dark" };
 
 /** Tarjeta de nota. Las notas externas (ej. Diario Junio) abren el medio original. */
@@ -52,7 +61,7 @@ export default function PostCard({ post, variant = "default" }: Props) {
         </p>
 
         <span className="mt-auto inline-flex items-center gap-2 pt-6 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-navy-900">
-          {external ? `Leer en ${post.source || "el medio"}` : "Leer nota"}
+          {external ? `Leer en ${mediaName(post.externalUrl!)}` : "Leer nota"}
           <svg
             className={`h-4 w-4 text-gold transition-transform duration-300 ${
               external ? "group-hover:-translate-y-0.5 group-hover:translate-x-0.5" : "group-hover:translate-x-1"

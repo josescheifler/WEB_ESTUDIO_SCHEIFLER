@@ -30,7 +30,7 @@ SERVICIOS
 4. Sector público: modernización de municipios, ingeniería fiscal y mejora de la recaudación con foco en desarrollo productivo.
 
 DATOS
-- Lidera el estudio el Lic. José Antonio Scheifler, Licenciado en Comercio Internacional, matriculado en el CPCEER.
+- Lidera el estudio el Dr. José Antonio Scheifler, Licenciado en Comercio Internacional, Mat. N° 16007 CPCEER.
 - Ubicación: ${SITE.location}. Atiende clientes de todo el país y del exterior.
 - En la web se puede agendar una videollamada de 30 minutos: [Agendar videollamada](${SITE.calendar})
 
