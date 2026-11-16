@@ -346,14 +346,14 @@ export default function Home() {
             <div className="relative aspect-[4/5] overflow-hidden rounded-[2rem] bg-sand shadow-lift">
               <Image
                 src="/jose-scheifler.jpg"
-                alt="Lic. José Antonio Scheifler"
+                alt="Dr. José Antonio Scheifler, Licenciado en Comercio Internacional"
                 fill
                 sizes="(min-width: 1024px) 40vw, 90vw"
                 className="object-cover object-top"
               />
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-950/85 to-transparent p-7 pt-24 text-white">
-                <p className="font-serif text-2xl">José Antonio Scheifler</p>
-                <p className="mt-1 text-xs uppercase tracking-[0.18em] text-white/70">Lic. en Comercio Internacional · CPCEER</p>
+                <p className="font-serif text-2xl">Dr. José Antonio Scheifler</p>
+                <p className="mt-1 text-xs uppercase tracking-[0.18em] text-white/70">Licenciado en Comercio Internacional · Mat. N° 16007 CPCEER</p>
               </div>
             </div>
           </Reveal>
@@ -373,12 +373,12 @@ export default function Home() {
                 En un mercado globalizado, los números no son solo cifras: son la brújula de su estrategia comercial.
                 Licenciado en Comercio Internacional y consultor de negocios internacionales, con matrícula profesional
                 en el <strong className="font-semibold text-navy-900">CPCEER</strong>, mi objetivo es simple: transformar
-                la complejidad contable e internacional en rentabilidad clara.
+                la complejidad de los costos y del comercio internacional en rentabilidad clara.
               </p>
               <p>
                 Somos una firma radicada en Entre Ríos con una visión que trasciende las fronteras locales. Entendemos que{" "}
                 <strong className="font-semibold text-navy-900">
-                  la contabilidad, la gestión pública y el comercio internacional
+                  los costos, la gestión pública y el comercio internacional
                 </strong>{" "}
                 no pueden tratarse como áreas aisladas. Ya sea optimizando la recaudación de un municipio o estructurando la
                 primera exportación de una PyME, el compromiso es el mismo: maximizar resultados minimizando riesgos.
@@ -397,7 +397,7 @@ export default function Home() {
                 <figcaption className="mt-8 flex items-center justify-between border-t border-white/15 pt-6">
                   <span className="font-serif text-2xl italic text-gold">J. A. Scheifler</span>
                   <span className="text-[0.65rem] font-semibold uppercase tracking-eyebrow text-white/50">
-                    Respaldo certificado
+                    Mat. N° 16007 CPCEER
                   </span>
                 </figcaption>
               </figure>

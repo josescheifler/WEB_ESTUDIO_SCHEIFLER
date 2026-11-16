@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Logo from "./Logo";
-import { SITE, whatsappLink } from "@/lib/site";
+import { SITE, SOCIALS, whatsappLink } from "@/lib/site";
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -41,6 +41,17 @@ export default function Footer() {
               </li>
               <li className="text-white/45">{SITE.location}</li>
             </ul>
+            {SOCIALS.some((s) => s.url) && (
+              <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-white/70">
+                {SOCIALS.filter((s) => s.url).map((s) => (
+                  <li key={s.name}>
+                    <a href={s.url} target="_blank" rel="noopener noreferrer" className="link-underline hover:text-white">
+                      {s.name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           <div className="lg:col-span-3">
@@ -67,13 +78,10 @@ export default function Footer() {
         </div>
 
         <div className="mt-6 flex flex-col gap-4 border-t border-white/10 pt-8 text-xs text-white/40 sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            {SITE.professional} · {SITE.title} · {SITE.matricula} · {SITE.location}
+          </p>
           <p>© {year} {SITE.name} Todos los derechos reservados.</p>
-          <Link href="/admin" className="w-fit opacity-40 transition-opacity hover:opacity-100" title="Acceso administrativo">
-            <span className="sr-only">Acceso administrativo</span>
-            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-          </Link>
         </div>
       </div>
     </footer>
